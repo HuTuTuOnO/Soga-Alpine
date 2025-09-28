@@ -17,7 +17,7 @@ fi
 if [[ -f /etc/alpine-release ]]; then
     release="alpine"
 else
-    echo -e "${red}本脚本仅适用Alpine，其他系统请使用官方脚本安装${plain}\n"
+    echo -e "${red}本脚本仅适用ALPINE，其他系统请使用官方脚本安装${plain}\n"
     exit 1
 fi
 
