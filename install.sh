@@ -113,6 +113,8 @@ command_args=""
 
 pidfile="/run/soga.pid"
 command_background="yes"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.log"
 
 depend() {
     need net
