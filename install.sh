@@ -50,6 +50,7 @@ is_cmd_exist() {
 
 install_base() {
     apk update
+    # 增加 openssl 以支持 install_acme 
     apk add wget curl tar tzdata socat bash openrc openssl
 }
 
