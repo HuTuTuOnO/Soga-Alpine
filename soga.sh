@@ -58,7 +58,7 @@ update() {
     fi
     sh <(curl -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/install.sh) $version
     if [ $? -eq 0 ]; then
-        echo -e "${green}更新完成，已自动重启 soga，已自动重启 soga。如节点未上线请检查配置文件${plain}"
+        echo -e "${green}更新完成，已自动重启 soga，请使用 soga log 查看运行日志${plain}"
         exit
     fi
 
