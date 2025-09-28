@@ -56,7 +56,7 @@ update() {
     else
         version=$2
     fi
-    sh <(curl -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/install.sh) $version
+    bash <(curl -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/install.sh) $version
     if [ $? -eq 0 ]; then
         echo -e "${green}更新完成，已自动重启 soga，请使用 soga log 查看运行日志${plain}"
         exit
