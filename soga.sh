@@ -275,6 +275,7 @@ show_menu() {
 ————————————————
  ${green}10.${plain} 查看 soga 版本
  "
+    show_status
     read -p "请输入选择 [0-10]: " num
 
     case "$num" in
