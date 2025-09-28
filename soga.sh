@@ -279,16 +279,16 @@ show_menu() {
 
     case "$num" in
         0) exit 0 ;;
-        1) install ;;
-        2) update ;;
-        3) uninstall ;;
-        4) start ;;
-        5) stop ;;
-        6) restart ;;
-        7) show_log ;;
-        8) enable ;;
-        9) disable ;;
-        10) show_status ;;
+        1) check_uninstall && install ;;
+        2) check_install && update ;;
+        3) check_install && uninstall ;;
+        4) check_install && start ;;
+        5) check_install && stop ;;
+        6) check_install && restart ;;
+        7) check_install && show_log ;;
+        8) check_install && enable ;;
+        9) check_install && disable ;;
+        10) check_install && show_status ;;  # 或 show_soga_version，根据你的函数
         *) echo -e "${red}请输入正确的数字 [0-10]${plain}" ;;
     esac
 }
