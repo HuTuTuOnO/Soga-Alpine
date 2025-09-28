@@ -127,24 +127,24 @@ start_pre() {
     [ -d /var/log ] || mkdir -p /var/log
 }
 
-start() {
-    supervise-daemon ${RC_SVCNAME} --start \
-        --respawn-delay 5 \
-        --pidfile "${pidfile}" \
-        --stdout "${output_log}" \
-        --stderr "${error_log}" \
-        ${command} ${command_args}
-}
-
-stop() {
-    start-stop-daemon --stop --pidfile "${pidfile}" --retry 5
-    rm -f "${pidfile}"
-}
-
-restart() {
-    svc_stop
-    svc_start
-}
+#start() {
+#    supervise-daemon ${RC_SVCNAME} --start \
+#        --respawn-delay 5 \
+#        --pidfile "${pidfile}" \
+#        --stdout "${output_log}" \
+#        --stderr "${error_log}" \
+#        ${command} ${command_args}
+#}
+#
+#stop() {
+#    start-stop-daemon --stop --pidfile "${pidfile}" --retry 5
+#    rm -f "${pidfile}"
+#}
+#
+#restart() {
+#    svc_stop
+#    svc_start
+#}
 EOF
 
     chmod +x /etc/init.d/soga
