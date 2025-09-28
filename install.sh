@@ -98,8 +98,9 @@ install_soga() {
     rm soga.tar.gz -f
     cd soga
     chmod +x soga
-    last_version="$(./soga -v)"
+    # 先创建文件在 执行 ./soga -v
     mkdir -p /etc/soga/
+    last_version="$(./soga -v)"
 
     # 创建适用于 OpenRC 的初始化脚本
     cat > /etc/init.d/soga <<-EOF
