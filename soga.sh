@@ -75,7 +75,7 @@ uninstall() {
         [ $# -eq 0 ] && show_menu
         return 0
     fi
-    service soga stop
+    rc-service soga stop
     rc-update del soga
     rm /etc/init.d/soga -f
     rm /etc/soga/ -rf
@@ -94,7 +94,7 @@ start() {
         echo ""
         echo -e "${green}soga已运行，无需再次启动，如需重启请选择重启${plain}"
     else
-        service soga start
+        rc-service soga start
         sleep 2
         check_status
         if [ $? -eq 0 ]; then
@@ -108,7 +108,7 @@ start() {
 }
 
 stop() {
-    service soga stop
+    rc-service soga stop
     sleep 2
     check_status
     if [ $? -eq 1 ]; then
@@ -121,7 +121,7 @@ stop() {
 }
 
 restart() {
-    service soga restart
+    rc-service soga restart
     sleep 2
     check_status
     if [ $? -eq 0 ]; then
@@ -171,14 +171,15 @@ update_shell() {
     fi
 }
 
-# 0: running, 1: not running, 2: not installed
+# 0: started, 1: stopped, 2: not installed, 3: crashed
 check_status() {
     [ ! -f /etc/init.d/soga ] && return 2
-    if pgrep -x "soga" > /dev/null; then
-        return 0
-    else
-        return 1
-    fi
+    status=$(rc-service soga status 2>&1)
+	if echo "$status" | grep -q "started"; then
+	    return 0
+	else	
+	    return 1
+	fi
 }
 
 check_enabled() {
