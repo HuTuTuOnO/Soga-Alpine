@@ -50,7 +50,7 @@ is_cmd_exist() {
 
 install_base() {
     apk update
-    apk add wget curl tar tzdata socat bash openrc
+    apk add wget curl tar tzdata socat bash openrc openssl
 }
 
 check_status() {
