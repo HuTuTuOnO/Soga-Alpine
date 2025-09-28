@@ -237,18 +237,22 @@ show_enable_status() {
 
 show_menu() {
     echo -e "
-  ${green}soga 后端管理脚本 (适用于Alpine Linux)${plain}
+  ${green}soga 后端管理脚本，${plain}${red}仅适用于ALPINE${plain}
 
   ${green}0.${plain} 退出脚本
+————————————————
   ${green}1.${plain} 安装 soga
   ${green}2.${plain} 更新 soga
   ${green}3.${plain} 卸载 soga
+————————————————
   ${green}4.${plain} 启动 soga
   ${green}5.${plain} 停止 soga
   ${green}6.${plain} 重启 soga
+————————————————
   ${green}7.${plain} 设置 soga 开机自启
   ${green}8.${plain} 取消 soga 开机自启
-  ${green}9.${plain} 查看 soga 状态
+————————————————
+ ${green}9.${plain} 查看 soga 版本
  "
     read -p "请输入选择 [0-10]: " num
 
