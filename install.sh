@@ -104,7 +104,7 @@ install_soga() {
     last_version="$(./soga -v)"
 
     # 创建适用于 OpenRC 的初始化脚本
-    cat > /etc/init.d/soga <<-EOF
+    cat > /etc/init.d/soga <<'EOF'
 #!/sbin/openrc-run
 description="Soga Service"
 
@@ -123,9 +123,27 @@ depend() {
 
 start_pre() {
     # Ensure /run directory exists
-    if [ ! -d /run ]; then
-        mkdir -p /run
-    fi
+    [ -d /run ] || mkdir -p /run
+    [ -d /var/log ] || mkdir -p /var/log
+}
+
+start() {
+    supervise-daemon ${RC_SVCNAME} --start \
+        --respawn-delay 5 \
+        --pidfile "${pidfile}" \
+        --stdout "${output_log}" \
+        --stderr "${error_log}" \
+        ${command} ${command_args}
+}
+
+stop() {
+    start-stop-daemon --stop --pidfile "${pidfile}" --retry 5
+    rm -f "${pidfile}"
+}
+
+restart() {
+    svc_stop
+    svc_start
 }
 EOF
 
