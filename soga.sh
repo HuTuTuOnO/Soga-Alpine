@@ -98,9 +98,9 @@ start() {
         sleep 2
         check_status
         if [ $? -eq 0 ]; then
-            echo -e "${green}soga 启动成功，如节点未上线请检查配置文件${plain}"
+            echo -e "${green}soga 启动成功，请使用 soga log 查看运行日志${plain}"
         else
-            echo -e "${red}soga可能启动失败，请检查配置文件${plain}"
+            echo -e "${red}soga可能启动失败，请稍后使用 soga log 查看日志信息${plain}"
         fi
     fi
 
@@ -114,7 +114,7 @@ stop() {
     if [ $? -eq 1 ]; then
         echo -e "${green}soga 停止成功${plain}"
     else
-        echo -e "${red}soga停止失败，可能是因为停止时间超过了两秒，请检查配置文件${plain}"
+        echo -e "${red}soga停止失败，可能是因为停止时间超过了两秒，请稍后查看日志信息${plain}"
     fi
 
     [ $# -eq 0 ] && before_show_menu
@@ -125,9 +125,9 @@ restart() {
     sleep 2
     check_status
     if [ $? -eq 0 ]; then
-        echo -e "${green}soga 重启成功，如节点未上线请检查配置文件${plain}"
+        echo -e "${green}soga 重启成功，请使用 soga log 查看运行日志${plain}"
     else
-        echo -e "${red}soga可能启动失败，请检查配置文件${plain}"
+        echo -e "${red}soga可能启动失败，请稍后使用 soga log 查看日志信息${plain}"
     fi
     [ $# -eq 0 ] && before_show_menu
 }
