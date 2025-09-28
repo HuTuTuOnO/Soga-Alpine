@@ -167,7 +167,7 @@ EOF
     echo "soga start              - 启动 soga"
     echo "soga stop               - 停止 soga"
     echo "soga restart            - 重启 soga"
-    echo "rc-service soga status  - 查看 soga 状态"
+    echo "soga status             - 查看 soga 状态"
     echo "soga enable             - 设置 soga 开机自启"
     echo "soga disable            - 取消 soga 开机自启"
     echo "soga update             - 更新 soga"
