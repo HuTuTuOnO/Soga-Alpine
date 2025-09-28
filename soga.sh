@@ -295,18 +295,18 @@ show_menu() {
 
 if [[ $# -gt 0 ]]; then
     case "$1" in
-        start) start ;;
-        stop) stop ;;
-        restart) restart ;;
-        enable) enable ;;
-        disable) disable ;;
-        log) show_log;;
-        update) update ;;
-        config) config "$@" ;;
-        install) install ;;
-        uninstall) uninstall ;;
-        version) /usr/local/soga/soga -v ;;
-        *) show_menu ;;
+        start)      check_install 0 && start 0 ;;
+        stop)       check_install 0 && stop 0 ;;
+        restart)    check_install 0 && restart 0 ;;
+        enable)     check_install 0 && enable 0 ;;
+        disable)    check_install 0 && disable 0 ;;
+        log)        check_install 0 && show_log 0 "$2" ;;
+        update)     check_install 0 && update 0 "$2" ;;
+        config)     config "$@" ;;
+        install)    check_uninstall 0 && install 0 ;;
+        uninstall)  check_install 0 && uninstall 0 ;;
+        version)    check_install 0 && show_soga_version 0 ;;
+        *)          show_menu ;;
     esac
 else
     show_menu
