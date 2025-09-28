@@ -285,6 +285,7 @@ show_menu() {
         4) start ;;
         5) stop ;;
         6) restart ;;
+        7) show_log ;;
         8) enable ;;
         9) disable ;;
         10) show_status ;;
@@ -299,6 +300,7 @@ if [[ $# -gt 0 ]]; then
         restart) restart ;;
         enable) enable ;;
         disable) disable ;;
+        log) show_log;;
         update) update ;;
         config) config "$@" ;;
         install) install ;;
