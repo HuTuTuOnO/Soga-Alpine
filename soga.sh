@@ -268,11 +268,12 @@ show_menu() {
   ${green}4.${plain} 启动 soga
   ${green}5.${plain} 停止 soga
   ${green}6.${plain} 重启 soga
+  ${green}7.${plain} 查看 soga 日志
 ————————————————
-  ${green}7.${plain} 设置 soga 开机自启
-  ${green}8.${plain} 取消 soga 开机自启
+  ${green}8.${plain} 设置 soga 开机自启
+  ${green}9.${plain} 取消 soga 开机自启
 ————————————————
- ${green}9.${plain} 查看 soga 版本
+ ${green}10.${plain} 查看 soga 版本
  "
     read -p "请输入选择 [0-10]: " num
 
@@ -284,9 +285,9 @@ show_menu() {
         4) start ;;
         5) stop ;;
         6) restart ;;
-        7) enable ;;
-        8) disable ;;
-        9) show_status ;;
+        8) enable ;;
+        9) disable ;;
+        10) show_status ;;
         *) echo -e "${red}请输入正确的数字 [0-10]${plain}" ;;
     esac
 }
