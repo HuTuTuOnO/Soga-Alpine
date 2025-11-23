@@ -196,7 +196,7 @@ EOF
     echo "soga config xx=xx yy=yy - 自动设置配置文件"
     echo "soga install            - 安装 soga"
     echo "soga uninstall          - 卸载 soga"
-    echo "soga version            - 查看 soga 版本"
+    echo "soga status             - 查看 soga 版本"
     echo "------------------------------------------"
 }
 
