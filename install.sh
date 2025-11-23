@@ -1,345 +1,206 @@
-#!/bin/bash
-
+#!/bin/sh
 red='\033[0;31m'
 green='\033[0;32m'
 yellow='\033[0;33m'
 plain='\033[0m'
 
-version="v1.0.0"
+cur_dir=$(pwd)
 
-# Check root
-if [[ $EUID -ne 0 ]]; then
-    echo -e "${red}错误: ${plain} 必须使用root用户运行此脚本！\n"
+# check root
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${red}错误：${plain} 必须使用root用户运行此脚本！\n"
     exit 1
 fi
 
-# Check if the OS is Alpine Linux
-if [[ -f /etc/alpine-release ]]; then
+# check os
+if grep -Eqi "alpine" /etc/issue || grep -Eqi "alpine" /proc/version; then
     release="alpine"
 else
-    echo -e "${red}本脚本仅适用ALPINE，其他系统请使用官方脚本安装${plain}\n"
+    echo -e "${red}未检测到系统版本或系统不支持，请联系脚本作者！${plain}\n"
     exit 1
 fi
 
-confirm() {
-    if [ $# -gt 1 ]; then
-        echo && read -p "$1 [默认$2]: " temp
-        [ -z "$temp" ] && temp=$2
-    else
-        read -p "$1 [y/n]: " temp
-    fi
-    [ "$temp" = "y" ] || [ "$temp" = "Y" ] && return 0 || return 1
-}
+arch=$(arch)
 
-confirm_restart() {
-    confirm "是否重启soga" "y"
-    if [ $? -eq 0 ]; then
-        restart
-    else
-        show_menu
-    fi
-}
+if [ "$arch" = "x86_64" ] || [ "$arch" = "x64" ] || [ "$arch" = "amd64" ]; then
+    arch="amd64"
+elif [ "$arch" = "aarch64" ] || [ "$arch" = "arm64" ]; then
+    arch="arm64"
+else
+    arch="amd64"
+    echo -e "${red}检测架构失败，使用默认架构: ${arch}${plain}"
+fi
 
-before_show_menu() {
-    echo && echo -n -e "${yellow}按回车返回主菜单: ${plain}" && read temp
-    show_menu
-}
+echo "架构: ${arch}"
 
-install() {
-    sh <(curl -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/install.sh)
-    [ $? -eq 0 ] && ( [ $# -eq 0 ] && start || start 0 )
-}
+if [ "$(getconf WORD_BIT)" != '32' ] && [ "$(getconf LONG_BIT)" != '64' ]; then
+    echo "本软件不支持 32 位系统(x86)，请使用 64 位系统(x86_64)，如果检测有误，请联系作者"
+    exit 2
+fi
 
-update() {
-    if [ $# -eq 0 ]; then
-        echo && echo -n -e "输入指定版本(默认最新版): " && read version
-    else
-        version=$2
-    fi
-    bash <(curl -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/install.sh) $version
-    if [ $? -eq 0 ]; then
-        echo -e "${green}更新完成，已自动重启 soga，请使用 soga log 查看运行日志${plain}"
-        exit
+is_cmd_exist() {
+    local cmd="$1"
+    if [ -z "$cmd" ]; then
+        return 1
     fi
 
-    [ $# -eq 0 ] && before_show_menu
+    command -v "$cmd" > /dev/null 2>&1
+    return $?
 }
 
-config() {
-    soga-tool "$@"
+install_base() {
+    apk update
+    # 增加 openssl 以支持 install_acme 
+    apk add wget curl tar tzdata socat bash openrc openssl
 }
 
-uninstall() {
-    confirm "确定要卸载 soga 吗?" "n"
-    if [ $? -ne 0 ]; then
-        [ $# -eq 0 ] && show_menu
+check_status() {
+    if [ ! -f /etc/init.d/soga ]; then
+        return 2
+    fi
+    status=$(rc-service soga status | grep "status:" | awk '{print $3}')
+    if [ "$status" = "started" ]; then
         return 0
+    else
+        return 1
     fi
-    rc-service soga stop >/dev/null 2>&1
-    rc-update del soga
-    rm /etc/init.d/soga -f
-    rm /etc/soga/ -rf
-    rm /usr/local/soga/ -rf
-
-    echo ""
-    echo -e "卸载成功，如果你想删除此脚本，则退出脚本后运行 ${green}rm /usr/bin/soga -f${plain} 进行删除"
-    echo ""
-
-    [ $# -eq 0 ] && before_show_menu
 }
 
-start() {
-    check_status
-    if [ $? -eq 0 ]; then
-        echo ""
-        echo -e "${green}soga已运行，无需再次启动，如需重启请选择重启${plain}"
+install_acme() {
+    curl https://get.acme.sh | sh
+    /root/.acme.sh/acme.sh --set-default-ca --server letsencrypt
+}
+
+install_soga() {
+    cd /usr/local/
+    if [ -e /usr/local/soga/ ]; then
+        rm /usr/local/soga/ -rf
+    fi
+
+    if [ $# -eq 0 ]; then
+        echo -e "开始安装 soga 最新版"
+        wget -N --no-check-certificate -O /usr/local/soga.tar.gz https://github.com/vaxilu/soga/releases/latest/download/soga-linux-${arch}.tar.gz
+        if [ $? -ne 0 ]; then
+            echo -e "${red}下载 soga 失败，请确保你的服务器能够下载 Github 的文件${plain}"
+            exit 1
+        fi
     else
-        rc-service soga start >/dev/null 2>&1
+        last_version=$1
+        url="https://github.com/vaxilu/soga/releases/download/${last_version}/soga-linux-${arch}.tar.gz"
+        echo -e "开始安装 soga v$1"
+        wget -N --no-check-certificate -O /usr/local/soga.tar.gz ${url}
+        if [ $? -ne 0 ]; then
+            echo -e "${red}下载 soga v$1 失败，请确保此版本存在${plain}"
+            exit 1
+        fi
+    fi
+
+    tar zxvf soga.tar.gz
+    rm soga.tar.gz -f
+    cd soga
+    chmod +x soga
+    # 先创建文件在 执行 ./soga -v
+    mkdir -p /etc/soga/
+    last_version="$(./soga -v)"
+
+    # 创建适用于 OpenRC 的初始化脚本
+    cat > /etc/init.d/soga <<'EOF'
+#!/sbin/openrc-run
+description="Soga Service"
+
+command="/usr/local/soga/soga"
+command_args=""
+
+pidfile="/run/soga.pid"
+command_background="yes"
+output_log="/var/log/${RC_SVCNAME}.log"
+error_log="/var/log/${RC_SVCNAME}.log"
+
+depend() {
+    need net
+    after firewall
+}
+
+start_pre() {
+    # Ensure /run directory exists
+    [ -d /run ] || mkdir -p /run
+    [ -d /var/log ] || mkdir -p /var/log
+}
+
+#start() {
+#    supervise-daemon ${RC_SVCNAME} --start \
+#        --respawn-delay 5 \
+#        --pidfile "${pidfile}" \
+#        --stdout "${output_log}" \
+#        --stderr "${error_log}" \
+#        ${command} ${command_args}
+#}
+#
+#stop() {
+#    start-stop-daemon --stop --pidfile "${pidfile}" --retry 5
+#    rm -f "${pidfile}"
+#}
+#
+#restart() {
+#    svc_stop
+#    svc_start
+#}
+EOF
+
+    chmod +x /etc/init.d/soga
+    rc-update add soga default
+
+    echo -e "${green}soga v${last_version}${plain} 安装完成，已设置开机自启"
+    if [ ! -f /etc/soga/soga.conf ]; then
+        cp soga.conf /etc/soga/
+        echo -e ""
+        echo -e "全新安装，请先配置必要的内容"
+    else
+        rc-service soga start
         sleep 2
         check_status
+        echo -e ""
         if [ $? -eq 0 ]; then
-            echo -e "${green}soga 启动成功，请使用 soga log 查看运行日志${plain}"
+            echo -e "${green}soga 启动成功${plain}"
         else
-            echo -e "${red}soga可能启动失败，请稍后使用 soga log 查看日志信息${plain}"
+            echo -e "${red}soga 可能启动失败，请稍后使用 soga log 查看日志信息${plain}"
         fi
     fi
 
-    [ $# -eq 0 ] && before_show_menu
-}
-
-stop() {
-    rc-service soga stop >/dev/null 2>&1
-    sleep 2
-    check_status
-    if [ $? -eq 1 ]; then
-        echo -e "${green}soga 停止成功${plain}"
-    else
-        echo -e "${red}soga停止失败，可能是因为停止时间超过了两秒，请稍后查看日志信息${plain}"
+    if [ ! -f /etc/soga/blockList ]; then
+        cp blockList /etc/soga/
     fi
-
-    [ $# -eq 0 ] && before_show_menu
-}
-
-restart() {
-    rc-service soga restart >/dev/null 2>&1
-    sleep 2
-    check_status
-    if [ $? -eq 0 ]; then
-        echo -e "${green}soga 重启成功，请使用 soga log 查看运行日志${plain}"
-    else
-        echo -e "${red}soga可能启动失败，请稍后使用 soga log 查看日志信息${plain}"
+    if [ ! -f /etc/soga/dns.yml ]; then
+        cp dns.yml /etc/soga/
     fi
-    [ $# -eq 0 ] && before_show_menu
-}
-
-enable() {
-    rc-update add soga default
-    if [ $? -eq 0 ]; then
-        echo -e "${green}soga 设置开机自启成功${plain}"
-    else
-        echo -e "${red}soga 设置开机自启失败${plain}"
+    if [ ! -f /etc/soga/routes.toml ]; then
+        cp routes.toml /etc/soga/
     fi
-
-    [ $# -eq 0 ] && before_show_menu
-}
-
-disable() {
-    rc-update del soga
-    if [ $? -eq 0 ]; then
-        echo -e "${green}soga 取消开机自启成功${plain}"
-    else
-        echo -e "${red}soga 取消开机自启失败${plain}"
-    fi
-
-    [ $# -eq 0 ] && before_show_menu
-}
-
-show_log() {
-    tail -f /var/log/soga.log
-    [ $# -eq 0 ] && before_show_menu
-}
-
-update_shell() {
-    wget -O /usr/bin/soga -N --no-check-certificate https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/soga.sh
-    if [ $? -ne 0 ]; then
-        echo ""
-        echo -e "${red}下载脚本失败，请检查本机能否连接 Github${plain}"
-        before_show_menu
-    else
-        chmod +x /usr/bin/soga
-        echo -e "${green}升级脚本成功，请重新运行脚本${plain}" && exit 0
-    fi
-}
-
-# 0: started, 1: stopped, 2: not installed, 3: crashed
-check_status() {
-    [ ! -f /etc/init.d/soga ] && return 2
-    status=$(rc-service soga status 2>&1)
-	if echo "$status" | grep -q "started"; then
-	    return 0
-	else	
-	    return 1
-	fi
-}
-
-check_enabled() {
-    rc-status | grep -q 'soga'
-    [ $? -eq 0 ] && return 0 || return 1
-}
-
-check_uninstall() {
-    check_status
-    if [ $? -ne 2 ]; then
-        echo ""
-        echo -e "${red}soga已安装，请不要重复安装${plain}"
-        [ $# -eq 0 ] && before_show_menu
-        return 1
-    else
-        return 0
-    fi
-}
-
-
-check_install() {
-    check_status
-    if [ $? -eq 2 ]; then
-        echo ""
-        echo -e "${red}请先安装soga${plain}"
-        [ $# -eq 0 ] && before_show_menu
-        return 1
-    else
-        return 0
-    fi
-}
-
-show_status() {
-    check_status
-    case $? in
-        0)
-            echo -e "soga状态: ${green}已运行${plain}"
-            show_enable_status
-            ;;
-        1)
-            echo -e "soga状态: ${yellow}未运行${plain}"
-            show_enable_status
-            ;;
-        2)
-            echo -e "soga状态: ${red}未安装${plain}"
-    esac
-}
-
-show_enable_status() {
-    check_enabled
-    if [ $? -eq 0 ]; then
-        echo -e "是否开机自启: ${green}是${plain}"
-    else
-        echo -e "是否开机自启: ${red}否${plain}"
-    fi
-}
-
-enable_auto_restart(){
-    if crontab -l | grep -q 'rc-service soga restart'; then
-        echo -e "${yellow}soga 报错自动重启任务已存在${plain}"
-    else
-        (crontab -l; echo "* * * * * /bin/sh -c 'if rc-service soga status 2>&1 | grep -qE \"crashed|stopped\"; then rc-service soga restart; fi'") | crontab -
-        if [ $? -eq 0 ]; then
-            echo -e "${green}已开启 soga 报错自动重启${plain}"
-        else
-            echo -e "${red}soga 报错自动重启开启失败${plain}"
-        fi
-    fi
-    [ $# -eq 0 ] && before_show_menu
-}
-
-disable_auto_restart(){
-    crontab -l | grep -v 'rc-service soga restart' | crontab -
-    if [ $? -eq 0 ]; then
-        echo -e "${green}已取消 soga 报错自动重启${plain}"
-    else
-        echo -e "${red}soga 报错自动重启取消失败${plain}"
-    fi
-    [ $# -eq 0 ] && before_show_menu
-}
-
-show_usage() {
+    curl -o /usr/bin/soga -Ls https://raw.githubusercontent.com/HuTuTuOnO/Soga-Alpine/main/soga.sh
+    chmod +x /usr/bin/soga
+    curl -o /usr/bin/soga-tool -Ls https://raw.githubusercontent.com/vaxilu/soga/master/soga-tool-${arch}
+    chmod +x /usr/bin/soga-tool
+    echo -e ""
     echo "soga 管理脚本使用方法: "
     echo "------------------------------------------"
     echo "soga                    - 显示管理菜单 (功能更多)"
     echo "soga start              - 启动 soga"
     echo "soga stop               - 停止 soga"
     echo "soga restart            - 重启 soga"
+    echo "soga status             - 查看 soga 状态"
     echo "soga enable             - 设置 soga 开机自启"
     echo "soga disable            - 取消 soga 开机自启"
-    echo "soga log                - 查看 soga 日志"
-    echo "soga update             - 更新 soga 最新版"
-    echo "soga update x.x.x       - 安装 soga 指定版本"
+    echo "soga update             - 更新 soga"
+    echo "soga update x.x.x       - 更新 soga 指定版本"
     echo "soga config             - 显示配置文件内容"
     echo "soga config xx=xx yy=yy - 自动设置配置文件"
     echo "soga install            - 安装 soga"
     echo "soga uninstall          - 卸载 soga"
-    echo "soga status             - 查看 soga 状态"
+    echo "soga version            - 查看 soga 版本"
     echo "------------------------------------------"
 }
 
-show_menu() {
-    echo -e "
-  ${green}soga 后端管理脚本，${plain}${red}仅适用于ALPINE${plain}
-
-  ${green}0.${plain} 退出脚本
-————————————————
-  ${green}1.${plain} 安装 soga
-  ${green}2.${plain} 更新 soga
-  ${green}3.${plain} 卸载 soga
-————————————————
-  ${green}4.${plain} 启动 soga
-  ${green}5.${plain} 停止 soga
-  ${green}6.${plain} 重启 soga
-  ${green}7.${plain} 查看 soga 日志
-————————————————
-  ${green}8.${plain} 设置 soga 开机自启
-  ${green}9.${plain} 取消 soga 开机自启
-————————————————
- ${green}10.${plain} 查看 soga 状态
-————————————————
- ${green}11.${plain} 开启 soga 报错自启
- ${green}12.${plain} 取消 soga 报错自启
- "
-    show_status
-    read -p "请输入选择 [0-10]: " num
-
-    case "$num" in
-        0) exit 0 ;;
-        1) check_uninstall && install ;;
-        2) check_install && update ;;
-        3) check_install && uninstall ;;
-        4) check_install && start ;;
-        5) check_install && stop ;;
-        6) check_install && restart ;;
-        7) check_install && show_log ;;
-        8) check_install && enable ;;
-        9) check_install && disable ;;
-        10) check_install && show_status ;;
-        11) check_install && enable_auto_restart ;;
-        12) check_install && disable_auto_restart ;;
-        *) echo -e "${red}请输入正确的数字 [0-12]${plain}" ;;
-    esac
-}
-
-if [[ $# -gt 0 ]]; then
-    case "$1" in
-        start)      check_install 0 && start 0 ;;
-        stop)       check_install 0 && stop 0 ;;
-        restart)    check_install 0 && restart 0 ;;
-        enable)     check_install 0 && enable 0 ;;
-        disable)    check_install 0 && disable 0 ;;
-        log)        check_install 0 && show_log 0 "$2" ;;
-        update)     check_install 0 && update 0 "$2" ;;
-        config)     config "$@" ;;
-        install)    check_uninstall 0 && install 0 ;;
-        uninstall)  check_install 0 && uninstall 0 ;;
-        version)    check_install 0 && show_status 0 ;;
-        *)          show_menu ;;
-    esac
-else
-    show_menu
-fi
+echo -e "${green}开始安装${plain}"
+install_base
+install_acme
+install_soga $1
