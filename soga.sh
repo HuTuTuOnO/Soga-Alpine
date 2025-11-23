@@ -277,7 +277,7 @@ show_usage() {
     echo "soga config xx=xx yy=yy - 自动设置配置文件"
     echo "soga install            - 安装 soga"
     echo "soga uninstall          - 卸载 soga"
-    echo "soga version            - 查看 soga 版本"
+    echo "soga status             - 查看 soga 状态"
     echo "------------------------------------------"
 }
 
@@ -299,7 +299,7 @@ show_menu() {
   ${green}8.${plain} 设置 soga 开机自启
   ${green}9.${plain} 取消 soga 开机自启
 ————————————————
- ${green}10.${plain} 查看 soga 版本
+ ${green}10.${plain} 查看 soga 状态
 ————————————————
  ${green}11.${plain} 开启 soga 报错自启
  ${green}12.${plain} 取消 soga 报错自启
@@ -318,9 +318,9 @@ show_menu() {
         7) check_install && show_log ;;
         8) check_install && enable ;;
         9) check_install && disable ;;
-        10) check_install && show_status ;;  # 或 show_soga_version，根据你的函数
-        11) check_install && enable_auto_restart ;;  # 开启 soga 报错自启
-        12) check_install && disable_auto_restart ;;  # 取消 soga 报错自启
+        10) check_install && show_status ;;
+        11) check_install && enable_auto_restart ;;
+        12) check_install && disable_auto_restart ;;
         *) echo -e "${red}请输入正确的数字 [0-12]${plain}" ;;
     esac
 }
@@ -337,7 +337,7 @@ if [[ $# -gt 0 ]]; then
         config)     config "$@" ;;
         install)    check_uninstall 0 && install 0 ;;
         uninstall)  check_install 0 && uninstall 0 ;;
-        version)    check_install 0 && show_soga_version 0 ;;
+        version)    check_install 0 && show_status 0 ;;
         *)          show_menu ;;
     esac
 else
