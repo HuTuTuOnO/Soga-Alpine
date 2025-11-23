@@ -305,7 +305,7 @@ show_menu() {
  ${green}12.${plain} 取消 soga 报错自启
  "
     show_status
-    read -p "请输入选择 [0-10]: " num
+    read -p "请输入选择 [0-12]: " num
 
     case "$num" in
         0) exit 0 ;;
