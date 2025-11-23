@@ -199,6 +199,7 @@ check_uninstall() {
     fi
 }
 
+
 check_install() {
     check_status
     if [ $? -eq 2 ]; then
@@ -234,6 +235,30 @@ show_enable_status() {
     else
         echo -e "是否开机自启: ${red}否${plain}"
     fi
+}
+
+enable_auto_restart(){
+    if crontab -l | grep -q 'rc-service soga restart'; then
+        echo -e "${yellow}soga 报错自动重启任务已存在${plain}"
+    else
+        (crontab -l; echo "* * * * * /bin/sh -c 'if rc-service soga status 2>&1 | grep -qE \"crashed|stopped\"; then rc-service soga restart; fi'") | crontab -
+        if [ $? -eq 0 ]; then
+            echo -e "${green}已开启 soga 报错自动重启${plain}"
+        else
+            echo -e "${red}soga 报错自动重启开启失败${plain}"
+        fi
+    fi
+    [ $# -eq 0 ] && before_show_menu
+}
+
+disable_auto_restart(){
+    crontab -l | grep -v 'rc-service soga restart' | crontab -
+    if [ $? -eq 0 ]; then
+        echo -e "${green}已取消 soga 报错自动重启${plain}"
+    else
+        echo -e "${red}soga 报错自动重启取消失败${plain}"
+    fi
+    [ $# -eq 0 ] && before_show_menu
 }
 
 show_usage() {
@@ -275,6 +300,9 @@ show_menu() {
   ${green}9.${plain} 取消 soga 开机自启
 ————————————————
  ${green}10.${plain} 查看 soga 版本
+————————————————
+ ${green}11.${plain} 开启 soga 报错自启
+ ${green}12.${plain} 取消 soga 报错自启
  "
     show_status
     read -p "请输入选择 [0-10]: " num
@@ -291,7 +319,9 @@ show_menu() {
         8) check_install && enable ;;
         9) check_install && disable ;;
         10) check_install && show_status ;;  # 或 show_soga_version，根据你的函数
-        *) echo -e "${red}请输入正确的数字 [0-10]${plain}" ;;
+        11) check_install && enable_auto_restart ;;  # 开启 soga 报错自启
+        12) check_install && disable_auto_restart ;;  # 取消 soga 报错自启
+        *) echo -e "${red}请输入正确的数字 [0-12]${plain}" ;;
     esac
 }
 
